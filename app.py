@@ -17,7 +17,7 @@ prevention_priority = pd.read_csv("prevention_priority.csv")
 
 # --- 1. 페이지 레이아웃 및 설정 ---
 st.set_page_config(
-    page_title="AI 학교 안전사고 예방 및 대응 시스템",
+    page_title="학교 안전사고 예방 및 대응 시스템",
     page_icon="🏛️",
     layout="wide"
 )
