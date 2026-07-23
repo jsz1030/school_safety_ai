@@ -1,10 +1,9 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-
 import joblib
 
-# 모델 및 데이터 로드 (경로는 환경에 맞게 유지)
+# --- 0. 모델 및 데이터 로드 ---
 tuned_lgbm_model = joblib.load("tuned_lgbm_model.pkl")
 label_encoders = joblib.load("label_encoders.pkl")
 class_name_map = joblib.load("class_name_map.pkl")
@@ -13,19 +12,17 @@ lgb_model = joblib.load("lgb_model.pkl")
 cat_model = joblib.load("cat_model.pkl")
 
 explainer = joblib.load("explainer.pkl")
-
 categorical_cols = joblib.load("categorical_cols.pkl")
-
 prevention_priority = pd.read_csv("prevention_priority.csv")
 
-# --- 1. 페이지 레이아웃 및 설정 (전문적인 와이드 모드) ---
+# --- 1. 페이지 레이아웃 및 설정 ---
 st.set_page_config(
     page_title="AI 학교 안전사고 예방 및 대응 시스템",
     page_icon="🏛️",
     layout="wide"
 )
 
-# --- 2. CSS 스타일 적용 (전문적인 블루/슬레이트 카드 스타일) ---
+# --- 2. CSS 스타일 적용 ---
 st.markdown("""
 <style>
     .main {
@@ -69,10 +66,11 @@ st.markdown("<h1 style='text-align: center; color: #1E3A8A;'> 🏛️ AI 기반 
 st.markdown("<p style='text-align: center; color: #475569;'><b>[빅데이터 분석]</b> 학교 안전사고 통계 데이터 및 <b>[머신러닝 모델]</b> LightGBM·CatBoost 앙상블을 활용한 지능형 안전 관리 플랫폼</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-# --- 4. 사이드바 (사고 조건 입력부) ---
+# --- 4. 사이드바 (사고 조건 설정) ---
 st.sidebar.markdown("### 🔍 사고 조건 설정")
 
 school_level = st.sidebar.selectbox("🎒 학교급", ["유치원", "초등학교", "중학교", "고등학교", "특수학교"], index=None, placeholder="학교급을 선택하세요")
+
 time_options = ["이론수업", "과학", "실과(기술·가정)", "기타(음악, 미술 등)", "체육", "자유놀이활동시간", "언어활동", "신체활동, 게임", "음악, 미술", "수학, 과학활동", "요리활동", "실외활동(바깥놀이 포함)", "기타 활동시간", "자율활동", "동아리활동", "봉사활동", "진로활동", "체육대회", "경기출전", "현장학습", "수련활동, 수학여행", "학교축제", "기타 특별활동시간", "등교", "하교", "돌봄교실", "방과후과정", "식사시간(간식 포함)", "쉬는시간", "자습시간", "(유치원)특성화활동", "기타 학교체류", "그 밖의 교육활동 시간"]
 time = st.sidebar.selectbox("⏰ 사고시간", time_options, index=None, placeholder="사고시간을 선택하세요")
 
@@ -97,7 +95,7 @@ else:
     if run_btn:
         with st.spinner("AI 모델 분석 수행 중..."):
             
-            # [1. 위험등급 예측 로직 연동부]
+            # [1. 위험등급 예측]
             try:
                 input_data_cls = pd.DataFrame({'학교급': [school_level], '사고장소': [location], '사고시간': [time], '사고형태': [acc_type]})
                 for col in ['학교급', '사고장소', '사고시간', '사고형태']:
@@ -108,7 +106,7 @@ else:
                 pred_idx = -1
                 pred_risk_grade = "분석 불가"
 
-            # [2. 예상 보상금 계산 로직 연동부]
+            # [2. 예상 보상금 계산]
             try:
                 input_data_reg = pd.DataFrame({
                     "지역": ["미상"], "학교급": [school_level], "사고자구분": ["미상"], 
@@ -127,7 +125,6 @@ else:
                 comp_str = "산출 불가"
 
             # [3 & 4. 예방 우선순위 및 빈도 계산]
-            # 마크다운 문법 (**) 대신 HTML <b> 태그 사용으로 변경
             combo_key = f"{school_level}-{location}-{time}-{acc_type}"
             try:
                 priority_info = prevention_priority[prevention_priority['사고유형'] == combo_key]
@@ -156,20 +153,24 @@ else:
                 freq_str = "0건"
                 priority_str = "분석 오류"
 
-            # [5. SHAP 중요 요인 분석 - 줄글(자연어) 설명 형태]
+            # [5. SHAP 중요 요인 분석 - 자연어 생성 로직]
             try:
                 if pred_idx != -1:
                     instance_shap = explainer.shap_values(input_data_cls)
-                    shap_vals = select_class_shap(instance_shap, pred_idx, 1, 4)[0] 
+                    
+                    # 에러를 방지하는 범용 SHAP 값 추출 로직
+                    if isinstance(instance_shap, list):
+                        shap_vals = instance_shap[pred_idx][0]
+                    else:
+                        shap_vals = instance_shap[0]
+                        
                     shap_df = pd.DataFrame({'요인': ['학교급', '사고장소', '사고시간', '사고형태'], '기여도': shap_vals})
                     shap_df['절대기여도'] = shap_df['기여도'].abs()
                     shap_df = shap_df.sort_values('절대기여도', ascending=False)
                     
-                    # 1위, 2위 중요 요인 추출
                     top1_factor = shap_df.iloc[0]['요인']
                     top2_factor = shap_df.iloc[1]['요인']
                     
-                    # 요인명에 해당하는 실제 유저 입력값 매핑
                     input_mapping = {
                         '학교급': school_level,
                         '사고장소': location,
@@ -179,7 +180,6 @@ else:
                     val1 = input_mapping[top1_factor]
                     val2 = input_mapping[top2_factor]
                     
-                    # AI가 브리핑하는 듯한 자연어 문장 생성
                     shap_desc = f"""
                     💡 <b>AI 위험 요인 진단 및 인사이트</b><br>
                     이번 <b>'{pred_risk_grade}'</b> 판정의 가장 결정적인 원인은 <b>[{top1_factor}]</b> 요인(<b>{val1}</b>)으로 분석되었습니다. 
@@ -191,49 +191,45 @@ else:
                 else:
                     shap_desc = "위험등급 산출이 불가하여 AI 분석을 수행할 수 없습니다."
             except Exception as e:
-                shap_desc = "SHAP 분석 로직을 불러올 수 없습니다. (데이터 부족 또는 에러)"
-
-            
+                shap_desc = f"SHAP 분석 로직 처리 중 오류가 발생했습니다. (에러: {e})"
 
             # [6 & 7. 공식 안전 지침 링크]
-            # 마크다운 링크 문법 ([]) 대신 순수 HTML <a> 태그 사용
             if any(keyword in location or keyword in time or keyword in activity for keyword in ['체육', '운동', '스포츠', '구기', '육상']):
-                guideline_link = '🏃‍♂️ <a href="[https://www.schoolsafe.kr/](https://www.schoolsafe.kr/)" target="_blank" style="text-decoration: none; color: #2563EB; font-weight: bold;">체육활동 안전수칙 가이드 다운로드 (클릭)</a>'
+                guideline_link = '🏃‍♂️ <a href="https://www.schoolsafe.kr/" target="_blank" style="text-decoration: none; color: #2563EB; font-weight: bold;">체육활동 안전수칙 가이드 다운로드 (클릭)</a>'
             elif any(keyword in location or keyword in time or keyword in activity for keyword in ['실험', '과학']):
-                guideline_link = '🧪 <a href="[https://www.schoolsafe.kr/](https://www.schoolsafe.kr/)" target="_blank" style="text-decoration: none; color: #2563EB; font-weight: bold;">과학실험실 안전수칙 가이드 다운로드 (클릭)</a>'
+                guideline_link = '🧪 <a href="https://www.schoolsafe.kr/" target="_blank" style="text-decoration: none; color: #2563EB; font-weight: bold;">과학실험실 안전수칙 가이드 다운로드 (클릭)</a>'
             else:
-                guideline_link = '📚 <a href="[https://www.schoolsafe.kr/](https://www.schoolsafe.kr/)" target="_blank" style="text-decoration: none; color: #2563EB; font-weight: bold;">학교생활 일반 안전수칙 가이드 다운로드 (클릭)</a>'
+                guideline_link = '📚 <a href="https://www.schoolsafe.kr/" target="_blank" style="text-decoration: none; color: #2563EB; font-weight: bold;">학교생활 일반 안전수칙 가이드 다운로드 (클릭)</a>'
 
-        # --- 6. HTML 생성부 (마크다운 백틱을 <code> 태그로 완벽 치환) ---
+        # 🚨 [중요] HTML 코드는 들여쓰기 없이 맨 왼쪽으로 바짝 붙여야 합니다.
         html_content = f"""
-        <div class="report-card">
-            <h3 class="report-title"> 📊 [{school_level}] {location} - {time} 사고 분석 종합 리포트 </h3>
-            
-            <h4 class="section-header"> 📌 1. 핵심 예측 지표 </h4>
-            <ul style="line-height: 1.8;">
-                <li> 🔴 <b>AI 예측 위험등급 :</b> <code>{pred_risk_grade}</code> </li>
-                <li> 💰 <b>예상 보상금 산출액 :</b> <code>{comp_str}</code> </li>
-                <li> 📈 <b>과거 사고 빈도 :</b> 과거 5년간 <code>{freq_str}</code> </li>
-                <li> 🏆 <b>CRITIC-TOPSIS 예방 우선순위 :</b> {priority_str} </li>
-            </ul>
+<div class="report-card">
+    <h3 class="report-title"> 📊 [{school_level}] {location} - {time} 사고 분석 종합 리포트 </h3>
+    
+    <h4 class="section-header"> 📌 1. 핵심 예측 지표 </h4>
+    <ul style="line-height: 1.8;">
+        <li> 🔴 <b>AI 예측 위험등급 :</b> <code>{pred_risk_grade}</code> </li>
+        <li> 💰 <b>예상 보상금 산출액 :</b> <code>{comp_str}</code> </li>
+        <li> 📈 <b>과거 사고 빈도 :</b> 과거 5년간 <code>{freq_str}</code> </li>
+        <li> 🏆 <b>CRITIC-TOPSIS 예방 우선순위 :</b> {priority_str} </li>
+    </ul>
 
-            <h4 class="section-header"> 🔍 2. 머신러닝 모델 해석 (SHAP) </h4>
-            <div class="shap-box"> {shap_desc} </div>
+    <h4 class="section-header"> 🔍 2. 머신러닝 모델 해석 (SHAP) </h4>
+    <div class="shap-box"> {shap_desc} </div>
 
-            <h4 class="section-header"> 💡 3. 현장 맞춤형 예방 가이드 (Action Item) </h4>
-            <ul style="line-height: 1.8;">
-                <li> 🛠️ <b>환경 통제 :</b> [{location}] 구역의 위험 요소를 점검하고, 사고 발생 시 <b>[{body_part}]</b> 부위의 충격을 완화할 안전 인프라 보강 </li>
-                <li> ⏱️ <b>시간 및 활동 통제 :</b> [{time}] 시간대 <b>[{activity}]</b> 활동 시 안전 지도 인력 최소 2명 이상 집중 배치 </li>
-                <li> 📢 <b>행동 통제 :</b> [{acc_type}] 유형 사고 예방을 위한 대상별 시청각 안전 교육 실시 </li>
-            </ul>
+    <h4 class="section-header"> 💡 3. 현장 맞춤형 예방 가이드 (Action Item) </h4>
+    <ul style="line-height: 1.8;">
+        <li> 🛠️ <b>환경 통제 :</b> [{location}] 구역의 위험 요소를 점검하고, 사고 발생 시 <b>[{body_part}]</b> 부위의 충격을 완화할 안전 인프라 보강 </li>
+        <li> ⏱️ <b>시간 및 활동 통제 :</b> [{time}] 시간대 <b>[{activity}]</b> 활동 시 안전 지도 인력 최소 2명 이상 집중 배치 </li>
+        <li> 📢 <b>행동 통제 :</b> [{acc_type}] 유형 사고 예방을 위한 대상별 시청각 안전 교육 실시 </li>
+    </ul>
 
-            <h4 class="section-header"> 🔗 4. 공식 안전 지침 및 매뉴얼 </h4>
-            {guideline_link}
-            <br><br>
-            <p style="color: #64748B; font-size: 0.85em; margin-top: 20px; text-align: right;"> ℹ️ 본 리포트는 학교 안전사고 빅데이터 및 머신러닝 예측 모델을 기반으로 산출되었습니다. </p>
-        </div>
-        """
+    <h4 class="section-header"> 🔗 4. 공식 안전 지침 및 매뉴얼 </h4>
+    {guideline_link}
+    <br><br>
+    <p style="color: #64748B; font-size: 0.85em; margin-top: 20px; text-align: right;"> ℹ️ 본 리포트는 학교 안전사고 빅데이터 및 머신러닝 예측 모델을 기반으로 산출되었습니다. </p>
+</div>
+"""
         
-        st.markdown(html_content, unsafe_allow_html=True)
-        
+        # 화면 출력 (이 함수만 호출해야 두 번 출력되지 않습니다)
         st.markdown(html_content, unsafe_allow_html=True)
