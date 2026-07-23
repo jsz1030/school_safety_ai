@@ -157,10 +157,14 @@ else:
             try:
                 if pred_idx != -1:
                     instance_shap = explainer.shap_values(input_data_cls)
-                    
-                    # 에러를 방지하는 범용 SHAP 값 추출 로직
+
                     if isinstance(instance_shap, list):
                         shap_vals = instance_shap[pred_idx][0]
+
+                    elif len(instance_shap.shape) == 3:
+                     # (1,4,3) → 예측된 클래스만 선택
+                        shap_vals = instance_shap[0, :, pred_idx]
+
                     else:
                         shap_vals = instance_shap[0]
                         
