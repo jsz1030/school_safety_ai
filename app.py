@@ -163,8 +163,8 @@ else:
             else:
                 guideline_link = "📚 [학교생활 일반 안전수칙 가이드 다운로드 (클릭)](https://www.schoolsafe.kr/)"
 
-        # --- 6. 전문적인 카드 리포트 화면 렌더링 ---
-        st.markdown(f"""
+        # --- 6. 전문적인 카드 리포트 화면 렌더링 (수정본) ---
+        html_content = f"""
         <div class="report-card">
             <h3 class="report-title"> 📊 [{school_level}] {location} - {time} 사고 분석 종합 리포트 </h3>
             
@@ -191,4 +191,7 @@ else:
             <br><br>
             <p style="color: #64748B; font-size: 0.85em; margin-top: 20px; text-align: right;"> ℹ️ 본 리포트는 학교 안전사고 빅데이터 및 머신러닝 예측 모델을 기반으로 산출되었습니다. </p>
         </div>
-        """, unsafe_allow_html=True)
+        """
+        
+        # 💡 핵심: unsafe_allow_html=True를 꼭 붙여주어야 HTML 태그가 정상 적용됩니다!
+        st.markdown(html_content, unsafe_allow_html=True)
