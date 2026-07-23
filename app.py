@@ -205,7 +205,7 @@ else:
             else:
                 guideline_link = '📚 <a href="https://www.schoolsafe.kr/" target="_blank" style="text-decoration: none; color: #2563EB; font-weight: bold;">학교생활 일반 안전수칙 가이드 다운로드 (클릭)</a>'
 
-html_content = f"""
+        html_content = f"""
 <div class="report-card">
 <h3 class="report-title"> 📊 [{school_level}] {location} - {time} 사고 분석 종합 리포트 </h3>
 <h4 class="section-header"> 📌 1. 핵심 예측 지표 </h4>
@@ -233,4 +233,4 @@ html_content = f"""
 </div>
 """
 
-st.markdown(html_content, unsafe_allow_html=True)
+        st.markdown(html_content, unsafe_allow_html=True)
