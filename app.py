@@ -205,35 +205,27 @@ else:
             else:
                 guideline_link = '📚 <a href="https://www.schoolsafe.kr/" target="_blank" style="text-decoration: none; color: #2563EB; font-weight: bold;">학교생활 일반 안전수칙 가이드 다운로드 (클릭)</a>'
 
-        # 🚨 [중요] HTML 코드는 들여쓰기 없이 맨 왼쪽으로 바짝 붙여야 합니다.
-        html_content = f"""
-<div class="report-card">
-    <h3 class="report-title"> 📊 [{school_level}] {location} - {time} 사고 분석 종합 리포트 </h3>
-    
-    <h4 class="section-header"> 📌 1. 핵심 예측 지표 </h4>
-    <ul style="line-height: 1.8;">
-        <li> 🔴 <b>AI 예측 위험등급 :</b> <code>{pred_risk_grade}</code> </li>
-        <li> 💰 <b>예상 보상금 산출액 :</b> <code>{comp_str}</code> </li>
-        <li> 📈 <b>과거 사고 빈도 :</b> 과거 5년간 <code>{freq_str}</code> </li>
-        <li> 🏆 <b>CRITIC-TOPSIS 예방 우선순위 :</b> {priority_str} </li>
-    </ul>
+html_content = f"""<div class="report-card">
+<h3 class="report-title"> 📊 [{school_level}] {location} - {time} 사고 분석 종합 리포트 </h3>
+<h4 class="section-header"> 📌 1. 핵심 예측 지표 </h4>
+<ul style="line-height: 1.8;">
+<li> 🔴 <b>AI 예측 위험등급 :</b> <code>{pred_risk_grade}</code> </li>
+<li> 💰 <b>예상 보상금 산출액 :</b> <code>{comp_str}</code> </li>
+<li> 📈 <b>과거 사고 빈도 :</b> 과거 5년간 <code>{freq_str}</code> </li>
+<li> 🏆 <b>CRITIC-TOPSIS 예방 우선순위 :</b> {priority_str} </li>
+</ul>
+<h4 class="section-header"> 🔍 2. 머신러닝 모델 해석 (SHAP) </h4>
+<div class="shap-box"> {shap_desc} </div>
+<h4 class="section-header"> 💡 3. 현장 맞춤형 예방 가이드 (Action Item) </h4>
+<ul style="line-height: 1.8;">
+<li> 🛠️ <b>환경 통제 :</b> [{location}] 구역의 위험 요소를 점검하고, 사고 발생 시 <b>[{body_part}]</b> 부위의 충격을 완화할 안전 인프라 보강 </li>
+<li> ⏱️ <b>시간 및 활동 통제 :</b> [{time}] 시간대 <b>[{activity}]</b> 활동 시 안전 지도 인력 최소 2명 이상 집중 배치 </li>
+<li> 📢 <b>행동 통제 :</b> [{acc_type}] 유형 사고 예방을 위한 대상별 시청각 안전 교육 실시 </li>
+</ul>
+<h4 class="section-header"> 🔗 4. 공식 안전 지침 및 매뉴얼 </h4>
+{guideline_link}
+<br><br>
+<p style="color: #64748B; font-size: 0.85em; margin-top: 20px; text-align: right;"> ℹ️ 본 리포트는 학교 안전사고 빅데이터 및 머신러닝 예측 모델을 기반으로 산출되었습니다. </p>
+</div>"""
 
-    <h4 class="section-header"> 🔍 2. 머신러닝 모델 해석 (SHAP) </h4>
-    <div class="shap-box"> {shap_desc} </div>
-
-    <h4 class="section-header"> 💡 3. 현장 맞춤형 예방 가이드 (Action Item) </h4>
-    <ul style="line-height: 1.8;">
-        <li> 🛠️ <b>환경 통제 :</b> [{location}] 구역의 위험 요소를 점검하고, 사고 발생 시 <b>[{body_part}]</b> 부위의 충격을 완화할 안전 인프라 보강 </li>
-        <li> ⏱️ <b>시간 및 활동 통제 :</b> [{time}] 시간대 <b>[{activity}]</b> 활동 시 안전 지도 인력 최소 2명 이상 집중 배치 </li>
-        <li> 📢 <b>행동 통제 :</b> [{acc_type}] 유형 사고 예방을 위한 대상별 시청각 안전 교육 실시 </li>
-    </ul>
-
-    <h4 class="section-header"> 🔗 4. 공식 안전 지침 및 매뉴얼 </h4>
-    {guideline_link}
-    <br><br>
-    <p style="color: #64748B; font-size: 0.85em; margin-top: 20px; text-align: right;"> ℹ️ 본 리포트는 학교 안전사고 빅데이터 및 머신러닝 예측 모델을 기반으로 산출되었습니다. </p>
-</div>
-"""
-        
-        # 화면 출력 (이 함수만 호출해야 두 번 출력되지 않습니다)
-        st.markdown(html_content, unsafe_allow_html=True)
+st.markdown(html_content, unsafe_allow_html=True)
