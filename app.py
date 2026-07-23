@@ -4,6 +4,7 @@ import numpy as np
 
 import joblib
 
+# 모델 및 데이터 로드 (경로는 환경에 맞게 유지)
 tuned_lgbm_model = joblib.load("tuned_lgbm_model.pkl")
 label_encoders = joblib.load("label_encoders.pkl")
 class_name_map = joblib.load("class_name_map.pkl")
@@ -126,6 +127,7 @@ else:
                 comp_str = "산출 불가"
 
             # [3 & 4. 예방 우선순위 및 빈도 계산]
+            # 마크다운 문법 (**) 대신 HTML <b> 태그 사용으로 변경
             combo_key = f"{school_level}-{location}-{time}-{acc_type}"
             try:
                 priority_info = prevention_priority[prevention_priority['사고유형'] == combo_key]
@@ -134,7 +136,7 @@ else:
                     rank = int(priority_info['순위'].values[0])
                     total_cases = len(prevention_priority)
                     top_percent = (rank / total_cases) * 100
-                    priority_str = f"전체 {total_cases}개 유형 중 **{rank}위** (상위 {top_percent:.1f}%)"
+                    priority_str = f"전체 {total_cases}개 유형 중 <b>{rank}위</b> (상위 {top_percent:.1f}%)"
                     freq_str = f"{freq}건 발생"
                 else:
                     similar_info = prevention_priority[
@@ -145,49 +147,73 @@ else:
                         best_similar = similar_info.sort_values(by='X3_Accident_Frequency', ascending=False).iloc[0]
                         freq = int(best_similar['X3_Accident_Frequency'])
                         rank = int(best_similar['순위'])
-                        priority_str = f"유사 조건 기준 **{rank}위**"
+                        priority_str = f"유사 조건 기준 <b>{rank}위</b>"
                         freq_str = f"유사 조건 {freq}건"
                     else:
-                        priority_str = "⚠️ **신규 잠재 위험** (선제적 예방 요망)"
+                        priority_str = "⚠️ <b>신규 잠재 위험</b> (선제적 예방 요망)"
                         freq_str = "0건 (과거 5년 이력 없음)"
             except:
                 freq_str = "0건"
                 priority_str = "분석 오류"
 
-            # [5. SHAP 중요 요인 분석]
+            # [5. SHAP 중요 요인 분석 - 줄글(자연어) 설명 형태]
             try:
                 if pred_idx != -1:
                     instance_shap = explainer.shap_values(input_data_cls)
-                    shap_vals = select_class_shap(instance_shap, pred_idx, 1, 4)[0]
+                    shap_vals = select_class_shap(instance_shap, pred_idx, 1, 4)[0] 
                     shap_df = pd.DataFrame({'요인': ['학교급', '사고장소', '사고시간', '사고형태'], '기여도': shap_vals})
                     shap_df['절대기여도'] = shap_df['기여도'].abs()
                     shap_df = shap_df.sort_values('절대기여도', ascending=False)
-                    top_factor = shap_df.iloc[0]['요인']
                     
-                    shap_desc = f"AI 모델의 SHAP(SHapley Additive exPlanations) 해석 결과, 이번 **'{pred_risk_grade}'** 판정에는 **[{top_factor}]** 요인이 가장 결정적인 기여를 했습니다. 즉, 입력하신 조건 중 {top_factor}의 특성이 해당 사고 위험도를 높인 핵심 원인으로 작용했습니다."
+                    # 1위, 2위 중요 요인 추출
+                    top1_factor = shap_df.iloc[0]['요인']
+                    top2_factor = shap_df.iloc[1]['요인']
+                    
+                    # 요인명에 해당하는 실제 유저 입력값 매핑
+                    input_mapping = {
+                        '학교급': school_level,
+                        '사고장소': location,
+                        '사고시간': time,
+                        '사고형태': acc_type
+                    }
+                    val1 = input_mapping[top1_factor]
+                    val2 = input_mapping[top2_factor]
+                    
+                    # AI가 브리핑하는 듯한 자연어 문장 생성
+                    shap_desc = f"""
+                    💡 <b>AI 위험 요인 진단 및 인사이트</b><br>
+                    이번 <b>'{pred_risk_grade}'</b> 판정의 가장 결정적인 원인은 <b>[{top1_factor}]</b> 요인(<b>{val1}</b>)으로 분석되었습니다. 
+                    AI가 과거 사고 패턴을 해석한 결과, <b>'{val1}'</b> 조건이 사고 심각도를 높이는 데 가장 큰 가중치를 지니고 있습니다.<br><br>
+                    추가로 <b>[{top2_factor}]</b> 요인(<b>{val2}</b>) 역시 위험도를 가중시키는 핵심 변수로 작용했습니다. 
+                    결론적으로 현장에서는 <b>'{val1}'</b> 상황에서 <b>'{val2}'</b> 특성이 결합될 때 대형 사고로 이어질 확률이 급증하므로, 
+                    이 두 가지 요소를 우선순위로 삼아 사전 안전점검과 집중적인 인력 배치를 수행할 것을 권장합니다.
+                    """
                 else:
-                    shap_desc = "위험등급 산출이 불가하여 분석을 수행할 수 없습니다."
+                    shap_desc = "위험등급 산출이 불가하여 AI 분석을 수행할 수 없습니다."
             except Exception as e:
-                shap_desc = "SHAP 분석 로직을 불러올 수 없습니다."
+                shap_desc = "SHAP 분석 로직을 불러올 수 없습니다. (데이터 부족 또는 에러)"
+
+            
 
             # [6 & 7. 공식 안전 지침 링크]
+            # 마크다운 링크 문법 ([]) 대신 순수 HTML <a> 태그 사용
             if any(keyword in location or keyword in time or keyword in activity for keyword in ['체육', '운동', '스포츠', '구기', '육상']):
-                guideline_link = "🏃‍♂️ [체육활동 안전수칙 가이드 다운로드 (클릭)](https://www.schoolsafe.kr/)"
+                guideline_link = '🏃‍♂️ <a href="[https://www.schoolsafe.kr/](https://www.schoolsafe.kr/)" target="_blank" style="text-decoration: none; color: #2563EB; font-weight: bold;">체육활동 안전수칙 가이드 다운로드 (클릭)</a>'
             elif any(keyword in location or keyword in time or keyword in activity for keyword in ['실험', '과학']):
-                guideline_link = "🧪 [과학실험실 안전수칙 가이드 다운로드 (클릭)](https://www.schoolsafe.kr/)"
+                guideline_link = '🧪 <a href="[https://www.schoolsafe.kr/](https://www.schoolsafe.kr/)" target="_blank" style="text-decoration: none; color: #2563EB; font-weight: bold;">과학실험실 안전수칙 가이드 다운로드 (클릭)</a>'
             else:
-                guideline_link = "📚 [학교생활 일반 안전수칙 가이드 다운로드 (클릭)](https://www.schoolsafe.kr/)"
+                guideline_link = '📚 <a href="[https://www.schoolsafe.kr/](https://www.schoolsafe.kr/)" target="_blank" style="text-decoration: none; color: #2563EB; font-weight: bold;">학교생활 일반 안전수칙 가이드 다운로드 (클릭)</a>'
 
-        # --- 6. <code> 대신 마크다운 백틱을 사용하여 HTML 노출 원천 차단 ---
+        # --- 6. HTML 생성부 (마크다운 백틱을 <code> 태그로 완벽 치환) ---
         html_content = f"""
         <div class="report-card">
             <h3 class="report-title"> 📊 [{school_level}] {location} - {time} 사고 분석 종합 리포트 </h3>
             
             <h4 class="section-header"> 📌 1. 핵심 예측 지표 </h4>
             <ul style="line-height: 1.8;">
-                <li> 🔴 <b>AI 예측 위험등급 :</b> `{pred_risk_grade}` </li>
-                <li> 💰 <b>예상 보상금 산출액 :</b> `{comp_str}` </li>
-                <li> 📈 <b>과거 사고 빈도 :</b> 과거 5년간 `{freq_str}` </li>
+                <li> 🔴 <b>AI 예측 위험등급 :</b> <code>{pred_risk_grade}</code> </li>
+                <li> 💰 <b>예상 보상금 산출액 :</b> <code>{comp_str}</code> </li>
+                <li> 📈 <b>과거 사고 빈도 :</b> 과거 5년간 <code>{freq_str}</code> </li>
                 <li> 🏆 <b>CRITIC-TOPSIS 예방 우선순위 :</b> {priority_str} </li>
             </ul>
 
@@ -207,5 +233,7 @@ else:
             <p style="color: #64748B; font-size: 0.85em; margin-top: 20px; text-align: right;"> ℹ️ 본 리포트는 학교 안전사고 빅데이터 및 머신러닝 예측 모델을 기반으로 산출되었습니다. </p>
         </div>
         """
+        
+        st.markdown(html_content, unsafe_allow_html=True)
         
         st.markdown(html_content, unsafe_allow_html=True)
