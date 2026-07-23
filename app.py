@@ -1,7 +1,5 @@
 # (여기에 아까 만든 7대 지표 professional_theme 버전의 Gradio 전체 코드를 붙여넣으세요!)
 
-!pip install -q gradio
-
 import gradio as gr
 import pandas as pd
 import numpy as np
