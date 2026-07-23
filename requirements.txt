@@ -1,5 +1,1 @@
-gradio
-pandas
-numpy
-lightgbm
-catboost
+streamlit
