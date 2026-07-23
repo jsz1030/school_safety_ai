@@ -163,16 +163,16 @@ else:
             else:
                 guideline_link = "📚 [학교생활 일반 안전수칙 가이드 다운로드 (클릭)](https://www.schoolsafe.kr/)"
 
-        # --- 6. 전문적인 카드 리포트 화면 렌더링 (수정본) ---
+        # --- 6. <code> 대신 마크다운 백틱을 사용하여 HTML 노출 원천 차단 ---
         html_content = f"""
         <div class="report-card">
             <h3 class="report-title"> 📊 [{school_level}] {location} - {time} 사고 분석 종합 리포트 </h3>
             
             <h4 class="section-header"> 📌 1. 핵심 예측 지표 </h4>
             <ul style="line-height: 1.8;">
-                <li> 🔴 <b>AI 예측 위험등급 :</b> <code>{pred_risk_grade}</code> </li>
-                <li> 💰 <b>예상 보상금 산출액 :</b> <code>{comp_str}</code> </li>
-                <li> 📈 <b>과거 사고 빈도 :</b> 과거 5년간 <code>{freq_str}</code> </li>
+                <li> 🔴 <b>AI 예측 위험등급 :</b> `{pred_risk_grade}` </li>
+                <li> 💰 <b>예상 보상금 산출액 :</b> `{comp_str}` </li>
+                <li> 📈 <b>과거 사고 빈도 :</b> 과거 5년간 `{freq_str}` </li>
                 <li> 🏆 <b>CRITIC-TOPSIS 예방 우선순위 :</b> {priority_str} </li>
             </ul>
 
@@ -193,5 +193,4 @@ else:
         </div>
         """
         
-        # 💡 핵심: unsafe_allow_html=True를 꼭 붙여주어야 HTML 태그가 정상 적용됩니다!
         st.markdown(html_content, unsafe_allow_html=True)
