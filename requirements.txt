@@ -6,3 +6,4 @@ joblib
 lightgbm
 catboost
 shap
+sklearn
