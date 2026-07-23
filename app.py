@@ -2,6 +2,21 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+import joblib
+
+tuned_lgbm_model = joblib.load("tuned_lgbm_model.pkl")
+label_encoders = joblib.load("label_encoders.pkl")
+class_name_map = joblib.load("class_name_map.pkl")
+
+lgb_model = joblib.load("lgb_model.pkl")
+cat_model = joblib.load("cat_model.pkl")
+
+explainer = joblib.load("explainer.pkl")
+
+categorical_cols = joblib.load("categorical_cols.pkl")
+
+prevention_priority = pd.read_csv("prevention_priority.csv")
+
 # --- 1. 페이지 레이아웃 및 설정 (전문적인 와이드 모드) ---
 st.set_page_config(
     page_title="AI 학교 안전사고 예방 및 대응 시스템",
